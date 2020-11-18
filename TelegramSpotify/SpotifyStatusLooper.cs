@@ -37,7 +37,7 @@ namespace TelegramSpotify
 
                 if (nowPlaying.IsPlaying && nowPlaying.Item.GetType() == typeof(FullTrack))
                 {
-                    FullTrack item = (FullTrack)nowPlaying.Item;
+                    var item = (FullTrack)nowPlaying.Item;
 
                     var fullTrackName = $"{item.Artists[0].Name} — {item.Name}".Truncate(61);
                     tgReq.LastName = $"🎵 {fullTrackName}";
