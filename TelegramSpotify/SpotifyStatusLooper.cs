@@ -1,12 +1,16 @@
 ﻿using SpotifyAPI.Web;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TeleSharp.TL;
 using TeleSharp.TL.Account;
+using TeleSharp.TL.Photos;
 using TLSharp.Core;
+using TLSharp.Core.Utils;
 
 namespace TelegramSpotify
 {
@@ -31,7 +35,7 @@ namespace TelegramSpotify
 
                 var tgReq = new TLRequestUpdateProfile
                 {
-                    FirstName = Environment.GetEnvironmentVariable("FIRST_NAME"),
+                    FirstName = "",
                     LastName = ""
                 };
 
@@ -40,16 +44,34 @@ namespace TelegramSpotify
                     var item = (FullTrack)nowPlaying.Item;
 
                     var fullTrackName = $"{item.Artists[0].Name} — {item.Name}".Truncate(61);
-                    tgReq.LastName = $"🎵 {fullTrackName}";
+                    tgReq.FirstName = $"🎵 {fullTrackName}";
+
+                    if (tgReq.FirstName != lastSetName)
+                    {
+                        Console.WriteLine(item.Album.Images[0].Url);
+
+                        var client = new WebClient();
+                        var temp = Path.GetTempFileName();
+                        client.DownloadFile(item.Album.Images[0].Url, temp);
+
+                        var file = (TLInputFile)await telegram.UploadFile("album_art.jpg", new StreamReader(temp));
+
+                        var pfpReq = new TLRequestUploadProfilePhoto
+                        {
+                            File = file
+                        };
+
+                        await telegram.SendRequestAsync<TeleSharp.TL.Photos.TLPhoto>(pfpReq);
+                    }
                 }
 
-                if(tgReq.LastName != lastSetName)
+                if(tgReq.FirstName != lastSetName)
                 {
                     Console.WriteLine("new name!");
                     await telegram.SendRequestAsync<TLUser>(tgReq);
                 }
 
-                lastSetName = tgReq.LastName;
+                lastSetName = tgReq.FirstName;
 
                 Thread.Sleep(10000);
             }
